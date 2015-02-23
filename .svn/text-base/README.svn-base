@@ -1,0 +1,68 @@
+Laser Marker // Graffiti Research Lab Vienna
+==============================================================================
+
+Index ------------------------------------------------------------------------
+
+* Requirements
+* Setup
+* Credits & Thanks
+* Contact & Questions
+* License
+
+Requirements -----------------------------------------------------------------
+
+* Projector (1024x768 capable)
+* Mac OS X based Laptop, possibly Windows laptop (never tested)
+* iSight is minimum, works better with a DV/Firewire camera
+* Depending on the surface and distance, 30mW++ green laser
+* Processing (http://processing.org)
+* JMyron (http://webcamxtra.sourceforge.net/)
+  (Mac Intel version available here:
+  http://graffitiresearchlab.at/software/jmyron-version.tar.gz)
+
+Setup ------------------------------------------------------------------------
+
+* Point projector at a preferably wall big
+* Adjust camera to see the area that's being projected at
+* Set your resolution to 1024x768
+* Start the software using Processing's presentation mode (this will run it
+  fullscreen)
+* Calibrate drawing area by pressing 'r'
+** Use the laser to point at the white spot (should be in the top left corner)
+** Press 'r' again to get to next white spot
+* Calibrate clearing area by pressing 'x'
+** Put it *outside* of the drawing area, and press 'x' again to switch to next
+   corner
+* Press 'm' to switch off the onscreen menu
+* Fiddle with software by using the onscreen menu instructions
+* Draw 40 meters high :)
+
+Credits & Thanks -------------------------------------------------------------
+
+GRL Vienna for development of Laser Marker:
+
+* Florian Hufsky http://72dpiarmy.com/
+* Michael Zeltner http://niij.org/
+
+The guys we ripped off:
+
+* Theo Watson http://muonics.com/ for the original software *link*
+* Evan Roth http://www.ni9e.com/ for the initial idea
+* Graffiti Research Lab http://graffitiresearchlab.com/ for awesomeness
+
+Thanks a lot guys :)
+
+Contact & Questions ----------------------------------------------------------
+
+If you want access to the versioning system, have questions to specific parts
+of the code or used it for your own projection bombing we're happy to hear
+about it: them@graffitiresearchlab.at
+
+You can also find more notes on our experiences with using it in public on
+http://graffitiresearchlab.at/
+
+License ----------------------------------------------------------------------
+
+Public Domain. Have fun :)
+
+-- G.R.L. Vienna

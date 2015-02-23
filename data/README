@@ -1,0 +1,93 @@
+Laser Marker // Graffiti Research Lab Vienna
+==============================================================================
+
+Index ------------------------------------------------------------------------
+
+* Requirements
+* Setup
+* Credits & Thanks
+* Contact & Questions
+* License
+
+Requirements -----------------------------------------------------------------
+
+* Projector - more lumens -> bigger projections
+* Mac OS X based Laptop, Windows compatible version will follow very shortly
+  (Hello Make Podcast viewers! Please give a week :))
+* Builtin iSight is minimum, drawing generally works better with a DV/Firewire
+  camera
+* Depending on the surface and distance, 30mW++ laser
+* Latest version of Processing (http://processing.org)
+* JMyron (http://webcamxtra.sourceforge.net/)
+  (For Mac's with an Intel processor download the following:
+  http://graffitiresearchlab.at/software/jmyron-version.tar.gz)
+
+Setup ------------------------------------------------------------------------
+
+* If you're on a Mac with an internal iSight, but want to use an external
+  camera, temporarily move
+  /System/Library/QuickTime/QuickTimeUSBVDCDigitizer.component to
+  for example your Desktop for the time of use.
+* Point projector at a preferably big and publicly visible wall
+* Adjust camera to see the area that's being projected at
+* Set your resolution to 1024x768
+* Start the software using Processing's presentation mode (this will run it
+  fullscreen)
+* Calibrate drawing area by pressing 'r'
+** Use the laser to point at the white spot (should be in the top left corner)
+** Press 'r' again to get to next white spot
+** Alternatively drag the corners of the white rectangle to the desired
+   location when in mouse mode. This also enables you to do bigger
+   projections, where you can't see all or any of the 4 corners
+* Calibrate clearing area by pressing 'x'
+** At best put it *outside* of the drawing area, and press 'x' again to
+   switch to next corner till you got your rectangle
+* Press 'm' to switch off the onscreen menu
+* Fiddle with software by using the onscreen menu instructions
+* Draw 10 stories high :)
+* Document it, add rap, and put it on the web.
+
+Credits & Thanks -------------------------------------------------------------
+
+G.R.L. Vienna for development of Laser Marker:
+
+* Florian Hufsky http://72dpiarmy.com/
+* Michael Zeltner http://niij.org/
+
+The guys we lovingly ripped off:
+
+* Theo Watson http://muonics.com/ for the original software 
+  http://muonics.net/site_docs/work.php?id=40
+  and
+  http://muonics.net/blog/index.php?postid=26
+* Evan Roth http://www.ni9e.com/
+* James Powderly http://fffff.at/james-powderly
+* Graffiti Research Lab http://graffitiresearchlab.com/ for über-awesomeness
+
+Thanks a lot guys :)
+
+Contact & Questions ----------------------------------------------------------
+
+To answer one of the most common questions right away:
+
+Q: Do you have to use a green laser?
+A: No, you can change what colour is tracked by looking for the
+   "jmyron.trackColor" command in the code and change it so it reflects for
+   example a red laser: jmyron.trackColor(255,0,0,color_threshold);
+
+If you want access to the versioning system, have questions to specific parts
+of the code or used it for your own projection bombing we're *happy* to hear
+about it: them@graffitiresearchlab.at
+
+You can also find out about our own experiences at 
+http://graffitiresearchlab.at/
+
+License ----------------------------------------------------------------------
+
+Public Domain, meant to be used by the people, *not* corporations.
+
+Have fun :)
+
+-- Gardening & Ranching Lovers Vienna
+
+PS: UNICORN POWER!

@@ -1,0 +1,481 @@
+/**
+ * Laserguided Graffiti System 2.0
+ * by Michael Zeltner & Florian Hufsky // Graffiti Research Lab Vienna
+ */
+
+/*
+NEXT
+  * draw border area
+  * save previous calibration (for when we change code and restart)
+  
+  * alternative brush: blob
+
+TODO
+  * use best blob (nearest to old position)
+  * speed optimize calibration/coorinate transformation: caluclate stuff that only changes on calibration only on calibration. 
+
+  * fix clear area
+
+  * make the values settable (sensitivity etc)
+
+  * !maybe! bezier curves for increased curve smoothness
+  * variable output resolution
+  
+  * intro screen: laser graffiti
+  ** please press space to start calibration etc. step out of the image
+*/
+
+import processing.video.*;
+import processing.opengl.*;
+import java.awt.geom.*;
+import JMyron.*;
+
+//settings
+int color_threshold = 200;
+int brush_width = 15-2;
+int drips_probability = 16;
+
+//jmyron camera laser tracking
+JMyron jmyron;
+PImage cam_image;
+int cam_width = 320;
+int cam_height = 240;
+
+//the four edges where the beamer is located int he camera picture
+//top, right, bottom, left (like shorthands in CSS)
+int[][] beamer_coordinates = new int[4][2];
+int[][] cleararea_coordinates = new int[4][2];
+
+boolean pointer_on_screen;
+boolean pointer_is_moving;
+boolean pointer_is_visible;
+int[] pointer = new int[2];
+int[] pointer_old = new int[2];
+int[] laser_coordinates = new int[2];
+int[] pointer_camera_coordinates = new int[2];
+
+//used for the actual drawing
+DripsScreen drips;
+
+//helpers for calibration
+int calibration_point; //used for running through the four edges during calibration
+int cleararea_calibration_point; //used for running through the four edges during calibration
+Point2D[] a_quad = new Point2D[4];
+
+boolean should_draw_menu = true;
+boolean should_draw_outline = false;
+boolean should_draw_framerate = false;
+
+Point2D.Double intersection;
+
+<<<<<<< .mine
+//offscreen drawing
+DripsScreen drips;
+
+int brush_width = 10-2;
+
+float brightness_treshhold = 50.0f;
+float stroke_weight = 20.0f;
+int drips_probability = 200000000;
+
+=======
+>>>>>>> .r261
+void setup() {
+  size(1024, 768, OPENGL);
+  noCursor();
+
+  //smooth();
+  
+  jmyron = new JMyron();//make a new instance of the object
+  jmyron.start(cam_width, cam_height);//start a capture at 320x240
+  jmyron.trackColor(0,255,0,color_threshold); //R, G, B, and range of similarity
+  jmyron.minDensity(25); //minimum pixels in the glob required to result in a box
+
+  cam_image = new PImage(cam_width, cam_height);
+  
+  a_quad[0] = new Point2D.Float(0.0,0.0);
+  a_quad[1] = new Point2D.Float(1.0,0.0);
+  a_quad[2] = new Point2D.Float(1.0,1.0);
+  a_quad[3] = new Point2D.Float(0.0,1.0);
+    
+  //top left
+  beamer_coordinates[0][0] = 50;
+  beamer_coordinates[0][1] = 10;
+  //top right
+  beamer_coordinates[1][0] = cam_width-50;
+  beamer_coordinates[1][1] = 65;
+  //bottom left
+  beamer_coordinates[2][0] = cam_width-30;
+  beamer_coordinates[2][1] = cam_height-40;
+  //bottom right
+  beamer_coordinates[3][0] = 5;
+  beamer_coordinates[3][1] = cam_height-15;
+  
+  pointer_on_screen = false;
+  pointer_is_moving = false;
+  
+  PFont f = loadFont("Univers66.vlw.gz");
+  textFont(f, 16);
+    
+  calibration_point = 4;
+  cleararea_calibration_point = 4;
+  drips = new DripsScreen();
+}
+
+void draw() {
+  background(0);
+  smooth();
+
+  //compute tasks
+  //repositionRectangleByMouse();
+  track_laser();
+  update_laser_position();
+  handle_cleararea();
+  
+  //draw the lines & drips
+  draw_drips();
+  
+  strokeWeight(1);
+  
+  if(should_draw_menu){
+    noStroke();
+    fill(0,0,0,128);
+    rect(0,0,width,height);
+    draw_menu();
+    
+    pushMatrix();
+    translate(0, height-cam_height);
+    float half_screen = (width/2)/cam_width;
+    scale(half_screen, half_screen);
+    draw_tracking();
+    popMatrix();
+  }
+
+  if(calibration_point != 4)
+    draw_calibration();
+  else if(cleararea_calibration_point != 4)
+    draw_cleararea_calibration();
+    
+  if(should_draw_framerate){
+    noStroke();
+    fill(255,255,255);
+    textAlign(LEFT);
+    text(frameRate, 10, 20);
+  }
+  
+  if(should_draw_outline){
+    noFill();
+    stroke(255,255,255,128);
+    strokeWeight(2);
+    rect(0,0,width,height);
+  }
+}
+
+
+void draw_menu(){
+  pushMatrix();
+  translate(10, 20);
+  fill(255,255,255);
+  noStroke();
+  int x = 0;
+  int y = 0;
+  
+  textAlign(LEFT);
+  //text("                         /// laser marker  ///", x, y);
+  
+  y += 15;
+  
+  ArrayList lines = new ArrayList();
+  lines.add("color threshold " + color_threshold);
+  lines.add("brush weight: " + brush_width);
+  lines.add("drips probability: " + drips_probability);
+  lines.add("");
+  
+  Iterator i = lines.iterator();
+  String s;
+  while(i.hasNext()){
+    s = (String)i.next();
+    y += 15;
+    text(s, x, y);
+  }
+  
+  
+  textAlign(RIGHT);
+  x = width-20;
+  y = 0;
+  
+  lines = new ArrayList();
+  lines.add("r - next calibration point");
+  lines.add("x - next cleararea point");
+  lines.add("c - clear draw area");
+  lines.add("m - toggle menu");
+  lines.add("f - toggle framerate");
+  lines.add("o - toggle outline");
+  
+  i = lines.iterator();
+  while(i.hasNext()){
+    s = (String)i.next();
+    y += 15;
+    text(s, x, y);
+  }
+
+  popMatrix();
+}
+
+void draw_calibration(){
+  noStroke();
+  fill(0,0,0,200);
+  rect(0,0,width,height);
+
+  noStroke();
+  fill(#ffffff);
+  Point2D point = a_quad[calibration_point];
+  
+  int c_size = width/15; //calibration cicrlce with
+  int c_x = (int)(point.getX()*width);
+  int c_y = (int)(point.getY()*height);
+  ellipse(c_x, c_y, c_size, c_size);
+  
+  if(pointer_is_visible){
+    beamer_coordinates[calibration_point][0] = pointer_camera_coordinates[0];
+    beamer_coordinates[calibration_point][1] = pointer_camera_coordinates[1];
+  }
+}
+
+void draw_cleararea_calibration(){
+  noStroke();
+  
+  pushMatrix();
+  
+  scale((float)width/(float)cam_width, (float)height/(float)cam_height);
+  draw_tracking(3);
+  
+  if(pointer_is_visible){
+    cleararea_coordinates[cleararea_calibration_point][0] = pointer_camera_coordinates[0];
+    cleararea_coordinates[cleararea_calibration_point][1] = pointer_camera_coordinates[1];
+  }
+  
+  popMatrix();
+}
+
+void draw_drips(){
+  drips.draw();
+}
+
+void draw_tracking(){
+  draw_tracking(1);
+}
+
+void draw_tracking(int strokeweight){
+  //draw the normal image of the camera
+  int[] img = jmyron.image();
+  cam_image.loadPixels();
+  arraycopy(img, cam_image.pixels);
+  cam_image.updatePixels();
+  image(cam_image, 0, 0);
+  
+  int[][] b = jmyron.globBoxes();
+
+  //draw the boxes
+  noFill();
+  stroke(0,255,0);
+  for(int i=0;i<b.length;i++){
+    rect( b[i][0] , b[i][1] , b[i][2] , b[i][3] );
+  }
+  
+  //draw the beamer
+  noFill();
+  stroke(255, 255, 255, 128);
+  strokeWeight(strokeweight);
+  //strokeCap(SQUARE);
+  quad(beamer_coordinates[0][0], beamer_coordinates[0][1],
+       beamer_coordinates[1][0], beamer_coordinates[1][1],
+       beamer_coordinates[2][0], beamer_coordinates[2][1],
+       beamer_coordinates[3][0], beamer_coordinates[3][1]
+       );
+  
+  //draw the clear area
+  stroke(255,0,0, 128);
+  quad(cleararea_coordinates[0][0], cleararea_coordinates[0][1],
+       cleararea_coordinates[1][0], cleararea_coordinates[1][1],
+       cleararea_coordinates[2][0], cleararea_coordinates[2][1],
+       cleararea_coordinates[3][0], cleararea_coordinates[3][1]
+       );
+  
+  //draw mah lazer!!!
+  if(pointer_is_visible){
+    int e_size = cam_width/10;
+    noStroke();
+    fill(0,255,0,128);
+    ellipse(pointer_camera_coordinates[0], pointer_camera_coordinates[1], e_size, e_size);
+  }
+}
+
+
+void track_laser(){
+
+  jmyron.update(); //update the camera view
+  
+  int brightestX = 0; // X-coordinate of the brightest video pixel
+  int brightestY = 0; // Y-coordinate of the brightest video pixel
+
+  int[][] blobs = jmyron.globCenters();//get the center points
+
+  if(blobs.length > 1){
+    // Draw a large, yellow circle at the brightest pixel
+    pointer_is_visible = true;
+    
+    brightestX = blobs[1][0];
+    brightestY = blobs[1][1];
+        
+    laser_coordinates[0] = brightestX;
+    laser_coordinates[1] = brightestY;
+    pointer_camera_coordinates[0] = brightestX;
+    pointer_camera_coordinates[1] = brightestY;
+ 
+    //if the brightest spot is inside the beamer area
+    int[] xpoints = new int[4];
+    int[] ypoints = new int[4];
+    for(int i=0; i<4; i++){
+      xpoints[i] = beamer_coordinates[i][0];
+      ypoints[i] = beamer_coordinates[i][1];
+    }
+    Polygon beamer_area = new Polygon(xpoints, ypoints, 4); //refactor me to use a polygon all the way
+
+    if(beamer_area.contains(brightestX, brightestY)){
+      if (pointer_on_screen == true){
+        pointer_old[0] = pointer[0];
+        pointer_old[1] = pointer[1];
+        pointer_is_moving = true;
+      }
+      else{
+        pointer_is_moving = false;
+      }
+      pointer_on_screen = true;
+
+
+      //transform camera coordinates to beamer (screen) coordinates
+      
+      //beamer_coordinates contains the calibrated area of the beamer 
+      Point2D.Double a = new Point2D.Double((double)beamer_coordinates[0][0], (double)beamer_coordinates[0][1]);
+      Point2D.Double b = new Point2D.Double((double)beamer_coordinates[1][0], (double)beamer_coordinates[1][1]);
+      Point2D.Double c = new Point2D.Double((double)beamer_coordinates[2][0], (double)beamer_coordinates[2][1]);
+      Point2D.Double d = new Point2D.Double((double)beamer_coordinates[3][0], (double)beamer_coordinates[3][1]);
+
+      Line2D.Double a_b = new Line2D.Double(a, b);
+      Line2D.Double d_c = new Line2D.Double(d, c);
+      Line2D.Double d_a = new Line2D.Double(d, a);
+      Line2D.Double c_b = new Line2D.Double(c, b);
+      
+      double l_a_b = line_length(a_b);
+      double l_d_a = line_length(d_a);
+
+      Point2D.Double flucht_y = new Point2D.Double();
+      Point2D.Double flucht_x = new Point2D.Double();
+      getLineLineIntersection(a_b, d_c, flucht_x);
+      getLineLineIntersection(d_a, c_b, flucht_y);
+      
+      Point2D.Double pointer_on_webcam = new Point2D.Double((double)brightestX, (double)brightestY);
+      
+      Line2D.Double x_p = new Line2D.Double(flucht_x, pointer_on_webcam);
+      Line2D.Double y_p = new Line2D.Double(flucht_y, pointer_on_webcam);
+      
+      Point2D.Double y_on_A = new Point2D.Double();
+      Point2D.Double x_on_B = new Point2D.Double();
+
+      getLineLineIntersection(x_p, d_a, y_on_A);
+      getLineLineIntersection(y_p, a_b, x_on_B);
+      
+      double l_a_y_on_A = line_length(new Line2D.Double(a, y_on_A));
+      double l_a_x_on_B = line_length(new Line2D.Double(a, x_on_B));
+      
+      intersection = y_on_A;
+
+      //x coordinate between 0 and 1
+      double the_y =  l_a_y_on_A / l_d_a;
+      double the_x = l_a_x_on_B / l_a_b;
+
+      pointer[0] = (int)(the_x * width);
+      pointer[1] = (int)(the_y * height);      
+    }
+    else {
+      pointer_on_screen = false;
+    }
+  }
+  else{
+    pointer_is_visible = false;
+    pointer_on_screen = false;
+  }
+}
+
+void handle_cleararea(){
+  if(pointer_is_visible){
+    int[] xpoints = new int[4];
+    int[] ypoints = new int[4];
+    for(int i=0; i<4; i++){
+      xpoints[i] = cleararea_coordinates[i][0];
+      ypoints[i] = cleararea_coordinates[i][1];
+    }
+    Polygon clear_area = new Polygon(xpoints, ypoints, 4); //refactor me to use a polygon all the way
+    
+    if(clear_area.contains(pointer_camera_coordinates[0], pointer_camera_coordinates[1]))
+      clear_draw_area();
+  }
+}
+
+void repositionRectangleByMouse(){
+  // reposition scan rectangle
+  if (mousePressed == true && mouseX < cam_width && mouseY < cam_height) {
+    int nearest_distance = -1;
+    int[] nearest = null;
+    //find nearest beamer coordinate and set it to new point
+    for(int i=0; i<4; i++){
+      int[] pt = beamer_coordinates[i];
+      int distance = (int)(pow(mouseX-pt[0], 2) + pow(mouseY-pt[1], 2)); //need no sqrt, because we're only comparing
+      if(distance < nearest_distance || nearest_distance == -1){
+        nearest = pt;
+        nearest_distance = distance;
+      }
+    }
+
+    //move nearest point to mouse coordinates
+    if(nearest != null){
+      nearest[0] = mouseX;
+      nearest[1] = mouseY;
+    }
+  }
+}
+
+void keyPressed() {
+  if(key == 'm')
+    should_draw_menu = !should_draw_menu;
+  if(key == 'f')
+    should_draw_framerate = !should_draw_framerate;
+  if(key == 'o')
+    should_draw_outline = !should_draw_outline;
+  if(key == 'c'){
+    clear_draw_area();
+  }
+  if(key == 'r'){
+    calibration_point += 1;
+    if(calibration_point == 4){
+      clear_draw_area(); //calibration finished - clear draw area
+    }
+    if(calibration_point == 5){
+      calibration_point = 0;
+    }
+  }
+  if(key == 'x'){
+    cleararea_calibration_point += 1;
+    if(cleararea_calibration_point == 4){
+      clear_draw_area(); //calibration finished - clear draw area
+    }
+    if(cleararea_calibration_point == 5){
+      cleararea_calibration_point = 0;
+    }
+  }
+}
+
+void clear_draw_area(){
+  drips.clear();
+}
